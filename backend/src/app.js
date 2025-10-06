@@ -8,10 +8,8 @@ import { connectToSocket } from "./controller/socketManager.js";
 import userRoutes from "./routes/user.routes.js"
 
 
-// const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3001';
 
-
-
+ 
 dotenv.config();
 const MONGO_URI = process.env.MONGO_URI;
 const PORT = process.env.PORT || 3001;

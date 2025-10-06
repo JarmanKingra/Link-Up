@@ -1,26 +1,20 @@
-
-import './App.css'
-import Authentication from './pages/authentication';
-import LandingPage from './pages/landing';
-import {Route, BrowserRouter, Routes} from "react-router-dom"
-
+import "./App.css";
+import Authentication from "./pages/authPage/authentication";
+import LandingPage from "./pages/landing";
+import { Route, BrowserRouter, Routes } from "react-router-dom";
+import VideoMeetComponent from "./pages/video/videoMeet.jsx";
 
 function App() {
-
-
   return (
     <>
-      <BrowserRouter>
-        <Routes>
-
-          <Route path='/' element={<LandingPage/>}/>
-          <Route path='/auth' element={<Authentication/>}/>
-          <Route path='*' element={<div>404 Not Found</div>} />
-           
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/auth" element={<Authentication />} />
+        <Route path="/:url" element={<VideoMeetComponent/>} />
+        <Route path="*" element={<div>404 Not Found</div>} />
+      </Routes>
     </>
-  )
+  );
 }
 
 export default App;

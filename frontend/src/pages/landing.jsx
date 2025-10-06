@@ -1,18 +1,40 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "../App.css";
+import { useNavigate } from "react-router-dom";
 
 export default function LandingPage() {
+
+  const router = useNavigate();
+
+  const[loggedIn, setLoggedIn] = useState(true);
+
+   useEffect(() => {
+      console.log('Runs when count changes');
+    }, [loggedIn]);
+
+  const hangleLogout = () => {
+    localStorage.removeItem('token');
+    setLoggedIn(false);
+  }
+
   return (
     <div className="landingPageContainer">
       <nav>
         <div className="navHeader">
           <h2>Link-Up</h2>
         </div>
+        {!(localStorage.getItem('token')) && 
         <div className="navList">
           <p>Join as Guest</p>
-          <p>Register</p>
-          <div role="button">Login</div>
+          <p onClick={() => router("/auth")}>Register</p>
+          <div role="button"  onClick={() => router("/auth")}>Login</div>
         </div>
+        }
+        {localStorage.getItem('token') && 
+        <div className="navList">
+          <div onClick={hangleLogout}>Logout</div>
+        </div>
+        }
       </nav>
 
       <div className="landingMainContainer">
