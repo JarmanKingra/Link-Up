@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./videomeet.module.css";
+import { io } from "socket.io-client";
+
 
 const serverUrl = "http://localhost:3001";
 
 var connections = {};
 
-const peerConfitConnections = {
+const peerConfigConnections = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
 
@@ -20,7 +22,7 @@ export default function VideoMeetComponent() {
 
   let [audioAvailable, setAudioAvialable] = useState(true);
 
-  let [video, setVideo] = useState();
+  let [video, setVideo] = useState([]);
 
   let [audio, setAudio] = useState();
 
@@ -62,7 +64,7 @@ export default function VideoMeetComponent() {
         setAudioAvialable(false);
       }
 
-      if(navigator.mediaDevices.getDisplayMedia){
+      if(navigator.mediaDevices.getDisplayMedia){ // if browser support Screen Sharing
         setScreenAvailable(true)
       }else{
         setScreenAvailable(false)
@@ -114,10 +116,106 @@ export default function VideoMeetComponent() {
     }
   },[audio, video])
 
+  // todo 
+  let gotMessageFromServer = () => {
+
+  }
+
+  // todo 
+  let addMessage = () => {
+    
+  }
+
+  let connectToSocketServer = () => {
+
+    socketRef.current = io.connect(serverUrl, {secure: false})
+
+    socketRef.current.on("signal", gotMessageFromServer );
+    socketRef.current.on("connect", () => {
+      socketRef.current.emit("join-call", window.location.href);
+      sockectIdRef.current = socketRef.current.id;
+      socketRef.current.on("chat-message", addMessage );
+
+      socketRef.current.on("user-left", (id) => {
+        setVideo((videos) => videos.filter((video) => video.socketId !== id))
+      })
+
+      socketRef.current.on("user-joined", (id, clients) => {
+        clients.forEach((socketListId) => {
+
+        connections[socketListId] = new RTCPeerConnection(peerConfigConnections);
+
+        connections[socketListId].onicecandidate = (event) => {
+          if(event.candidate !== null){
+            socketRef.current.emit("signal", socketListId, JSON.stringify({"ice": event.candidate}))
+          }
+        }
+
+        connections[socketListId].onaddstrean = (event) => {
+          let videoExists = videoRef.current.find(video => video.socketId == socketListId);
+
+          if(videoExists){
+            setVideo(video => {
+              const updatedvideos = videos.map(video => 
+                video.socketId == socketListId ? {...video, stream: event.stream} : video
+              )
+              videoRef.current = updatedvideos;
+              return updatedvideos;
+            })
+          } else {
+            let newVideo = {
+              socketId: socketListId,
+              stream: event.stream,
+              autoPlay: true,
+              playsinline: true
+            }
+
+            setVideo(videos => {
+              const updatedVideos = [...videos, newVideo];
+              videoRef.current = updatedVideos;
+              return updatedVideos;
+            })
+          }
+        };
+
+        if(window.localStream !== undefined && window.localStream !== null){
+          connections[socketListId].addStream(window.localStream);
+        } else {
+          // TODO BLACKSILENCE
+        }
+
+        })
+
+        if(id == sockectIdRef.current){
+          for( let id2 in connections){
+            if(id2 == sockectIdRef.current)continue
+
+            try {
+              connections[id2].addStream(window.localStream)
+            } catch (error) {}
+
+            connections[id2].createOffer().then((discription) => {
+              connections[id2].setLocalDiscription(discription)
+              .then(() => {
+                socketRef.current.emit("signal", id2, JSON.stringify({"sdp": connections[id2].localDescription}))
+              })
+              .catch(e => console.log(e));
+            })
+          }
+        }
+      })
+    })
+  }
+
+ 
+
+
+
+
   let getMedia = () => {
     setVideo(videoAvailable);
     setAudio(audioAvailable);
-    // connectToSocketServer();
+    connectToSocketServer();
   }
 
   let connect = () => {
