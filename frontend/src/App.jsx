@@ -3,6 +3,8 @@ import Authentication from "./pages/authPage/authentication";
 import LandingPage from "./pages/landing";
 import { Route, BrowserRouter, Routes } from "react-router-dom";
 import VideoMeetComponent from "./pages/video/videoMeet.jsx";
+import '@fortawesome/fontawesome-free/css/all.min.css';
+
 
 function App() {
   return (
