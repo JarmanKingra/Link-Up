@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./videomeet.module.css";
 import { io } from "socket.io-client";
-import { Badge, IconButton } from "@mui/material";
+import { Badge, Button, IconButton, prerelease } from "@mui/material";
 import ChatIcon from "@mui/icons-material/Chat";
+import TextField from '@mui/material/TextField';
 
 const serverUrl = "http://localhost:3001";
 
@@ -29,13 +30,13 @@ export default function VideoMeetComponent() {
 
   let [screen, setScreen] = useState();
 
-  let [showModal, setModal] = useState();
+  let [showModal, setModal] = useState(true);
 
   let [screenAvailable, setScreenAvailable] = useState();
 
   let [messages, setMessages] = useState([]);
 
-  let [message, setMessage] = useState();
+  let [message, setMessage] = useState("");
 
   let [newMessages, setNewMessages] = useState(12);
 
@@ -136,13 +137,14 @@ export default function VideoMeetComponent() {
           try {
             let tracks = localVideoRef.current.srcObject.getTracks();
             tracks.forEach((track) => track.stop());
-          } catch (error) {
-            // todo blackSilence
-            let blackSilence = (...args) =>
-              new MediaStream([black(...args), silence()]);
-            window.localStream = blackSilence();
-            localVideoRef.current.srcObject = window.localStream;
+          } catch (e) {
+            console.log(e);
           }
+          // todo blackSilence
+          let blackSilence = (...args) =>
+            new MediaStream([black(...args), silence()]);
+          window.localStream = blackSilence();
+          localVideoRef.current.srcObject = window.localStream;
 
           for (let id in connections) {
             connections[id].addStream(window.localStream);
@@ -247,7 +249,16 @@ export default function VideoMeetComponent() {
   };
 
   // todo
-  let addMessage = () => {};
+  let addMessage = (data, sender, socketIdSender) => {
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      {sender: sender, data: data}
+    ])
+
+    if(socketIdSender !== sockectIdRef.current){
+      setNewMessages((prevMessages) => prevMessages + 1);
+    }
+  };
 
   let connectToSocketServer = () => {
     socketRef.current = io.connect(serverUrl, { secure: false });
@@ -368,6 +379,93 @@ export default function VideoMeetComponent() {
     setAudio(!audio);
   };
 
+  let getDisplayMediaSuccess = (stream) => {
+    try {
+      window.localStream.getTracks.forEach((track) => track.stop());
+    } catch (e) {
+      console.log(e);
+    }
+
+    window.localStream = stream;
+    localVideoRef.current.srcObject = stream;
+
+    for (let id in connections) {
+      if (id == sockectIdRef.current) continue;
+      connections[id].addStream(window.localStream);
+      connections[id].createOffer().then((description) => {
+        connections[id]
+          .setLocalDescription(description)
+          .then(() => {
+            socketRef.current.emit(
+              "signal",
+              id,
+              JSON.stringify({ sdp: connections[id].localDescription })
+            );
+          })
+          .catch((e) => console.log(e));
+      });
+    }
+    stream.getTracks().forEach(
+      (track) =>
+        (track.onended = () => {
+          setScreen(false);
+
+          try {
+            let tracks = localVideoRef.current.srcObject.getTracks();
+            tracks.forEach((track) => track.stop());
+          } catch (e) {
+            console.log(e);
+          }
+
+          let blackSilence = (...args) =>
+            new MediaStream([black(...args), silence()]);
+          window.localStream = blackSilence();
+          localVideoRef.current.srcObject = window.localStream;
+
+          getUserMedia();
+        })
+    );
+  };
+
+  let getDisplayMedia = () => {
+    if (screen) {
+      if (navigator.mediaDevices.getDisplayMedia) {
+        navigator.mediaDevices
+          .getDisplayMedia({ video: true, audio: true })
+          .then(getDisplayMediaSuccess)
+          .then((stream) => {})
+          .catch((e) => console.log(e));
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (screen !== undefined) {
+      getDisplayMedia();
+    }
+  }, [screen]);
+
+  let handleScreen = () => {
+    setScreen(!screen);
+  };
+
+  let sendMessage = () => {
+    socketRef.current.emit("chat-message", message, username);
+    setMessage("");
+  }
+
+  let handleEndCall = () => {
+    try {
+      let tracks = localVideoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+    } catch (error) {
+      
+    }
+
+  window.location.href = "/home"
+     
+  }
+
   return (
     <div>
       {askForUsername ? (
@@ -389,6 +487,32 @@ export default function VideoMeetComponent() {
         </div>
       ) : (
         <div className={styles.meetVideoContainer}>
+          {showModal ? (
+            <div className={styles.chatRoom}>
+              <div className={styles.chatContainer}>
+                <h1>Chat</h1>
+
+                <div className={styles.chattingDisplay}>
+                  { messages.length > 0 ? messages.map((item, index) => { 
+                    return(
+                      <div style={{marginBottom: "20px"}} key={index}>
+                        <p style={{fontFamily: "cursive", fontWeight:"900"}}>{item.sender}:</p>
+                        <p style={{fontWeight: "normal", fontFamily: "monospace"}}>{item.data}</p>
+                      </div>
+                    )
+                  }) : <><p>No Messages yet!</p></>}
+                </div>
+
+                <div className={styles.chattingArea}>
+                  <TextField value={message} onChange={(e) => setMessage(e.target.value)} id="outlined-basic" label="Enter your chat" variant="outlined" />
+                  <Button variant="contained" onClick={sendMessage}>Send</Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <></>
+          )}
+
           <div className={styles.buttonContainers}>
             <div role="button" onClick={handleVideo}>
               {video == true ? (
@@ -404,9 +528,9 @@ export default function VideoMeetComponent() {
               )}
             </div>
 
-            <div role="button">
+            <div role="button" onClick={handleEndCall}>
               <i
-                class="fa-solid fa-square-phone"
+                className="fa-solid fa-square-phone"
                 style={{ color: "red", fontSize: "2rem" }}
               ></i>
             </div>
@@ -414,27 +538,27 @@ export default function VideoMeetComponent() {
             <div role="button" onClick={handleAudio}>
               {audio == true ? (
                 <i
-                  class="fa-solid fa-microphone-slash"
+                  className="fa-solid fa-microphone"
                   style={{ color: "white", fontSize: "2rem" }}
                 ></i>
               ) : (
                 <i
-                  class="fa-solid fa-microphone"
+                  className="fa-solid fa-microphone-slash"
                   style={{ color: "white", fontSize: "2rem" }}
                 ></i>
               )}
             </div>
 
             {screenAvailable == true ? (
-              <div role="button">
+              <div role="button" onClick={handleScreen}>
                 {screen == true ? (
                   <i
-                    class="fa-solid fa-laptop"
+                    className="fa-solid fa-laptop"
                     style={{ color: "white", fontSize: "2rem" }}
                   ></i>
                 ) : (
                   <i
-                    class="fa-solid fa-stop"
+                    className="fa-solid fa-stop"
                     style={{ color: "white", fontSize: "2rem" }}
                   ></i>
                 )}
