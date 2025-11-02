@@ -4,8 +4,9 @@ import { io } from "socket.io-client";
 import { Badge, Button, IconButton, prerelease } from "@mui/material";
 import ChatIcon from "@mui/icons-material/Chat";
 import TextField from "@mui/material/TextField";
+import server from "../../../environment";
 
-const serverUrl = "http://localhost:3001";
+const serverUrl = server.prod;
 
 var connections = {};
 
