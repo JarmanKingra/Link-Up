@@ -4,7 +4,7 @@ import styles from "./home.module.css"
 import { Button, IconButton, TextField } from '@mui/material';
 import RestoreIcon from '@mui/icons-material/Restore';
 import withAuth from '../../utils/withAuth';
-import { AuthContext } from '../../contexts/authContext';
+import { AuthContext } from '../../contexts/AuthContext';
 
 function HomeComponent() {
 

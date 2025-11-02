@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import HomeIcon from '@mui/icons-material/Home';
 
 import { IconButton } from '@mui/material';
-import { AuthContext } from '../../contexts/authContext';
+import { AuthContext } from '../../contexts/AuthContext';
 export default function History() {
 
 
