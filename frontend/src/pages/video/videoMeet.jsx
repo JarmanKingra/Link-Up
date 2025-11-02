@@ -3,7 +3,7 @@ import styles from "./videomeet.module.css";
 import { io } from "socket.io-client";
 import { Badge, Button, IconButton, prerelease } from "@mui/material";
 import ChatIcon from "@mui/icons-material/Chat";
-import TextField from '@mui/material/TextField';
+import TextField from "@mui/material/TextField";
 
 const serverUrl = "http://localhost:3001";
 
@@ -71,7 +71,7 @@ export default function VideoMeetComponent() {
       }
 
       if (navigator.mediaDevices.getDisplayMedia) {
-        // if browser support Screen Sharing
+        // if browser support Screen Sharing ... as i am new to webrtc so i worte this.
         setScreenAvailable(true);
       } else {
         setScreenAvailable(false);
@@ -252,10 +252,10 @@ export default function VideoMeetComponent() {
   let addMessage = (data, sender, socketIdSender) => {
     setMessages((prevMessages) => [
       ...prevMessages,
-      {sender: sender, data: data}
-    ])
+      { sender: sender, data: data },
+    ]);
 
-    if(socketIdSender !== sockectIdRef.current){
+    if (socketIdSender !== sockectIdRef.current) {
       setNewMessages((prevMessages) => prevMessages + 1);
     }
   };
@@ -275,7 +275,7 @@ export default function VideoMeetComponent() {
 
       socketRef.current.on("user-joined", (id, clients) => {
         clients.forEach((socketListId) => {
-          if (socketListId === sockectIdRef.current) return; ///
+          if (socketListId === sockectIdRef.current) return; 
 
           connections[socketListId] = new RTCPeerConnection(
             peerConfigConnections
@@ -452,19 +452,16 @@ export default function VideoMeetComponent() {
   let sendMessage = () => {
     socketRef.current.emit("chat-message", message, username);
     setMessage("");
-  }
+  };
 
   let handleEndCall = () => {
     try {
       let tracks = localVideoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
-    } catch (error) {
-      
-    }
+      tracks.forEach((track) => track.stop());
+    } catch (error) {}
 
-  window.location.href = "/home"
-     
-  }
+    window.location.href = "/home";
+  };
 
   return (
     <div>
@@ -493,19 +490,46 @@ export default function VideoMeetComponent() {
                 <h1>Chat</h1>
 
                 <div className={styles.chattingDisplay}>
-                  { messages.length > 0 ? messages.map((item, index) => { 
-                    return(
-                      <div style={{marginBottom: "20px"}} key={index}>
-                        <p style={{fontFamily: "cursive", fontWeight:"900"}}>{item.sender}:</p>
-                        <p style={{fontWeight: "normal", fontFamily: "monospace"}}>{item.data}</p>
-                      </div>
-                    )
-                  }) : <><p>No Messages yet!</p></>}
+                  {messages.length > 0 ? (
+                    messages.map((item, index) => {
+                      return (
+                        <div style={{ marginBottom: "20px" }} key={index}>
+                          <p
+                            style={{ fontFamily: "cursive", fontWeight: "900" }}
+                          >
+                            {item.sender}:</p>
+
+                            <p
+                            style={{
+                              fontWeight: "normal",
+                              fontFamily: "monospace",
+                            }}
+                          >
+                            {item.data}
+                          </p>
+                          
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <>
+                      <p>No Messages yet!</p>
+                    </>
+                  )}
                 </div>
 
                 <div className={styles.chattingArea}>
-                  <TextField value={message} onChange={(e) => setMessage(e.target.value)} id="outlined-basic" label="Enter your chat" variant="outlined" />
-                  <Button variant="contained" onClick={sendMessage}>Send</Button>
+                  <TextField
+                    style={{width: "70%"}}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    id="outlined-basic"
+                    label="Enter your chat"
+                    variant="outlined"
+                  />
+                  <Button variant="contained" onClick={sendMessage}>
+                    Send
+                  </Button>
                 </div>
               </div>
             </div>
